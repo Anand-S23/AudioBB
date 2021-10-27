@@ -8,11 +8,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var bookList: BookList = generateBookList()
+        val bookList = generateBookList()
+        bookList.get(1)
     }
 
     private fun generateBookList() : BookList {
-        var bookList: BookList = BookList()
+        val bookList = BookList()
 
         bookList.add(Book("The Lord of the Rings", "J. R. R. Tolkien"))
         bookList.add(Book("Assassin's Apprentice", "Robin Hobb"))
