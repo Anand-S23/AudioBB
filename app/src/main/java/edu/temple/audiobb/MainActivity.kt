@@ -8,43 +8,39 @@ import androidx.lifecycle.ViewModelProvider
 class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
 
     var twoPane = false
-    lateinit var bookViewModel: BookViewModel
+    private lateinit var bookViewModel: BookViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val bookListFragment = BookListFragment.newInstance(generateBookList())
-
         twoPane = findViewById<View>(R.id.container2) != null
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
 
-       if (savedInstanceState == null) {
-           if (twoPane) {
-               supportFragmentManager.beginTransaction()
-                   .replace(R.id.container1, bookListFragment)
-                   .commit()
-           } else {
-               supportFragmentManager.beginTransaction()
-                   .replace(R.id.container1, bookListFragment)
-                   .addToBackStack(null)
-                   .commit()
-           }
-       }
+        if (supportFragmentManager.findFragmentById(R.id.container1) is BookDetailsFragment &&
+            bookNullOrBlank(bookViewModel.getBook().value)) {
+            supportFragmentManager.popBackStack()
+        }
+
+        if (supportFragmentManager.findFragmentById(R.id.container1) is BookDetailsFragment && twoPane) {
+            supportFragmentManager.popBackStack()
+        }
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container1, BookListFragment.newInstance(generateBookList()))
+                .commit()
+        }
 
         if (twoPane) {
-            if (supportFragmentManager.findFragmentById(R.id.container1) is BookDetailsFragment) {
-                supportFragmentManager.popBackStack()
-            }
-
             if (supportFragmentManager.findFragmentById(R.id.container2) == null) {
                 supportFragmentManager.beginTransaction()
                     .add(R.id.container2, BookDetailsFragment())
                     .commit()
             }
-        } else if (!bookNullOrEmpty(bookViewModel.getBook().value)) {
+        } else if (!bookNullOrBlank(bookViewModel.getBook().value)) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.container2, BookDetailsFragment())
+                .replace(R.id.container1, BookDetailsFragment())
                 .addToBackStack(null)
                 .commit()
         }
@@ -77,10 +73,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
         return bookList
     }
 
-    private fun bookNullOrEmpty(_book: Book?) : Boolean {
-        if (_book == null || _book == Book("", "")) {
-            return true
-        }
-        return false
+    private fun bookNullOrBlank(_book: Book?) : Boolean {
+        return (_book?.title.isNullOrBlank() || _book?.author.isNullOrBlank())
     }
 }
