@@ -37,4 +37,10 @@ class BookDetailsFragment : Fragment() {
 
         return layout
     }
+
+    companion object {
+        fun newInstance () : BookDetailsFragment {
+            return BookDetailsFragment()
+        }
+    }
 }

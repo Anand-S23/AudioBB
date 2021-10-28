@@ -35,12 +35,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
         if (twoPane) {
             if (supportFragmentManager.findFragmentById(R.id.container2) == null) {
                 supportFragmentManager.beginTransaction()
-                    .add(R.id.container2, BookDetailsFragment())
+                    .add(R.id.container2, BookDetailsFragment.newInstance())
                     .commit()
             }
         } else if (!bookNullOrBlank(bookViewModel.getBook().value)) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.container1, BookDetailsFragment())
+                .replace(R.id.container1, BookDetailsFragment.newInstance())
                 .addToBackStack(null)
                 .commit()
         }
@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
     override fun selectionMade() {
         if (!twoPane) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.container1, BookDetailsFragment())
+                .replace(R.id.container1, BookDetailsFragment.newInstance())
                 .addToBackStack(null)
                 .commit()
         }
