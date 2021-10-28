@@ -2,14 +2,61 @@ package edu.temple.audiobb
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.View
+import androidx.lifecycle.ViewModelProvider
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
+
+    var twoPane = false
+    lateinit var bookViewModel: BookViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val bookList = generateBookList()
-        bookList.get(1)
+        val bookListFragment = BookListFragment.newInstance(generateBookList())
+
+        twoPane = findViewById<View>(R.id.container2) != null
+        bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
+
+       if (savedInstanceState == null) {
+           if (twoPane) {
+               supportFragmentManager.beginTransaction()
+                   .replace(R.id.container1, bookListFragment)
+                   .commit()
+           } else {
+               supportFragmentManager.beginTransaction()
+                   .replace(R.id.container1, bookListFragment)
+                   .addToBackStack(null)
+                   .commit()
+           }
+       }
+
+        if (twoPane) {
+            if (supportFragmentManager.findFragmentById(R.id.container1) is BookDetailsFragment) {
+                supportFragmentManager.popBackStack()
+            }
+
+            if (supportFragmentManager.findFragmentById(R.id.container2) == null) {
+                supportFragmentManager.beginTransaction()
+                    .add(R.id.container2, BookDetailsFragment())
+                    .commit()
+            }
+        } else if (!bookNullOrEmpty(bookViewModel.getBook().value)) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container2, BookDetailsFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+    }
+
+    override fun selectionMade() {
+        if (!twoPane) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container1, BookDetailsFragment())
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     private fun generateBookList() : BookList {
@@ -28,5 +75,12 @@ class MainActivity : AppCompatActivity() {
         bookList.add(Book("Harry Potter", "J.K. Rowling"))
 
         return bookList
+    }
+
+    private fun bookNullOrEmpty(_book: Book?) : Boolean {
+        if (_book == null || _book == Book("", "")) {
+            return true
+        }
+        return false
     }
 }
