@@ -30,8 +30,11 @@ class BookSearchActivity : AppCompatActivity() {
         setContentView(R.layout.activity_book_search)
 
         // Create an intent to pass information to calling activity
-        resultIntent = Intent().putExtra(CHANGE, false)
-        resultIntent = Intent().putExtra(RET_LIST, BookList())
+        resultIntent = Intent()
+        resultIntent.apply {
+            putExtra(CHANGE, false)
+            putExtra(RET_LIST, BookList())
+        }
 
         // Set code and data for returned result
         setResult(RESULT_OK, resultIntent)
@@ -44,10 +47,12 @@ class BookSearchActivity : AppCompatActivity() {
             val bookList = fetchBooks(searchBox.text.toString())
 
             // Update Intent
-            resultIntent = Intent().putExtra(CHANGE, true)
-            resultIntent = Intent().putExtra(RET_LIST, bookList)
-            setResult(RESULT_OK, resultIntent)
+            resultIntent.apply {
+                putExtra(CHANGE, true)
+                putExtra(RET_LIST, bookList)
+            }
 
+            setResult(RESULT_OK, resultIntent)
             finish()
         }
 

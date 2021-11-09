@@ -3,12 +3,22 @@ package edu.temple.audiobb
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 
 class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
 
     var twoPane = false
     private lateinit var bookViewModel: BookViewModel
+    private lateinit var bookList: BookList
+
+    val secondActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val changed: Boolean? = it.data?.getBooleanExtra(CHANGE, false)
+        if (changed == true) {
+            // Update bookList only if it is changed
+            bookList = (it.data?.getSerializableExtra(RET_LIST) as BookList)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
