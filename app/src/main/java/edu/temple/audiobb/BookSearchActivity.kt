@@ -1,6 +1,6 @@
 package edu.temple.audiobb
 
-import android.content.Intent
+import android.app.Activity
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -14,7 +14,7 @@ import org.json.JSONException
 public const val CHANGE: String = "bookListUpdated"
 public const val RET_LIST: String = "bookList"
 
-class BookSearchActivity : AppCompatActivity() {
+class BookSearchActivity : Activity() {
 
     private val volleyQueue : RequestQueue by lazy {
         Volley.newRequestQueue(this)

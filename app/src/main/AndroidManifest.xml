@@ -12,7 +12,8 @@
         android:theme="@style/Theme.AudioBB">
         <activity
             android:name=".BookSearchActivity"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@android:style/Theme.Holo.Light.Dialog" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
