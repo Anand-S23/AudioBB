@@ -13,7 +13,7 @@
         <activity
             android:name=".BookSearchActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.Holo.Light.Dialog" />
+            android:theme="@android:style/Theme.Holo.Light.Dialog.NoActionBar" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

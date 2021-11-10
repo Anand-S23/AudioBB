@@ -80,7 +80,13 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
         }
     }
 
+    override fun onBackPressed() {
+        super.onBackPressed()
+        bookViewModel.setBook(Book(0, "", "", ""))
+    }
+
     private fun bookNullOrBlank(_book: Book?) : Boolean {
-        return (_book?.title.isNullOrBlank() || _book?.author.isNullOrBlank())
+        return (_book?.id == 0 || _book?.title.isNullOrBlank() ||
+                _book?.author.isNullOrBlank() || _book?.coverURL.isNullOrBlank())
     }
 }
