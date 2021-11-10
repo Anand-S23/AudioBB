@@ -7,12 +7,13 @@
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/container1"
-        android:layout_width="336dp"
-        android:layout_height="786dp"
-        android:layout_marginStart="4dp"
+        android:layout_width="349dp"
+        android:layout_height="474dp"
+        android:layout_marginStart="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.63" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/container2"
@@ -24,4 +25,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.525" />
+
+    <Button
+        android:id="@+id/searchLaunchButton"
+        android:layout_width="169dp"
+        android:layout_height="74dp"
+        android:text="@string/search"
+        app:layout_constraintBottom_toTopOf="@+id/container1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.132"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.958" />
 </androidx.constraintlayout.widget.ConstraintLayout>

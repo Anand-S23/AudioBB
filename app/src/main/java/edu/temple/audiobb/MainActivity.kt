@@ -1,8 +1,11 @@
 package edu.temple.audiobb
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.Button
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 
@@ -10,19 +13,26 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
 
     var twoPane = false
     private lateinit var bookViewModel: BookViewModel
-    private lateinit var bookList: BookList
+    private var bookList: BookList = BookList()
 
-    val secondActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+    private val searchActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val changed: Boolean? = it.data?.getBooleanExtra(CHANGE, false)
         if (changed == true) {
             // Update bookList only if it is changed
             bookList = (it.data?.getSerializableExtra(RET_LIST) as BookList)
+
+            Log.d("TheTest", bookList.size().toString())
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val searchActivityIntent = Intent(this, BookSearchActivity::class.java)
+        findViewById<Button>(R.id.searchLaunchButton).setOnClickListener {
+            searchActivityLauncher.launch(searchActivityIntent)
+        }
 
         twoPane = findViewById<View>(R.id.container2) != null
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
@@ -38,7 +48,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                // .replace(R.id.container1, BookListFragment.newInstance(generateBookList()))
+                .replace(R.id.container1, BookListFragment.newInstance(bookList))
                 .commit()
         }
 

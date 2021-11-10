@@ -23,37 +23,19 @@ class BookSearchActivity : AppCompatActivity() {
         Volley.newRequestQueue(this)
     }
 
-    private lateinit var resultIntent: Intent
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_book_search)
 
         // Create an intent to pass information to calling activity
-        resultIntent = Intent()
-        resultIntent.apply {
-            putExtra(CHANGE, false)
-            putExtra(RET_LIST, BookList())
-        }
-
-        // Set code and data for returned result
-        setResult(RESULT_OK, resultIntent)
+        setIntentExtra(false, BookList())
 
         val searchBox = findViewById<EditText>(R.id.searchBox)
         val searchButton = findViewById<Button>(R.id.searchButton)
         val cancelButton = findViewById<Button>(R.id.cancelSearch)
 
         searchButton.setOnClickListener {
-            val bookList = fetchBooks(searchBox.text.toString())
-
-            // Update Intent
-            resultIntent.apply {
-                putExtra(CHANGE, true)
-                putExtra(RET_LIST, bookList)
-            }
-
-            setResult(RESULT_OK, resultIntent)
-            finish()
+            fetchBooks(searchBox.text.toString())
         }
 
         cancelButton.setOnClickListener {
@@ -61,7 +43,7 @@ class BookSearchActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchBooks(searchTerm: String) : BookList {
+    private fun fetchBooks(searchTerm: String) {
         val url = "https://kamorris.com/lab/cis3515/search.php?=term$searchTerm"
         val bookList = BookList()
 
@@ -78,8 +60,12 @@ class BookSearchActivity : AppCompatActivity() {
                                 jsonObj.getInt("id"), jsonObj.getString("title"),
                                 jsonObj.getString("author"), jsonObj.getString("cover_url")
                             )
+                            Log.d("Response", book.title)
                             bookList.add(book)
                         }
+
+                        setIntentExtra(true, bookList)
+                        finish()
                     } catch (e: JSONException) {
                         e.printStackTrace()
                     }
@@ -88,7 +74,16 @@ class BookSearchActivity : AppCompatActivity() {
                 }
             )
         )
+    }
 
-        return bookList
+    private fun setIntentExtra(change: Boolean, retList: BookList) {
+        // Update Intent
+        Log.d("TheTest", retList.size().toString())
+        intent.apply {
+            putExtra(CHANGE, change)
+            putExtra(RET_LIST, retList)
+        }
+
+        setResult(RESULT_OK, intent)
     }
 }
