@@ -21,7 +21,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface {
             // Update bookList only if it is changed
             bookList = (it.data?.getSerializableExtra(RET_LIST) as BookList)
 
-            Log.d("TheTest", bookList.size().toString())
+            Log.d("BookList", "Updated")
+
+            // Update Fragment
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.container1, BookListFragment.newInstance(bookList))
+                .commit()
         }
     }
 

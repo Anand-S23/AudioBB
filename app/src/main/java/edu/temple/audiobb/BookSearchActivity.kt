@@ -8,11 +8,8 @@ import android.widget.*
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonArrayRequest
-import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
-import com.squareup.picasso.Picasso
 import org.json.JSONException
-import org.json.JSONObject
 
 public const val CHANGE: String = "bookListUpdated"
 public const val RET_LIST: String = "bookList"
@@ -44,16 +41,17 @@ class BookSearchActivity : AppCompatActivity() {
     }
 
     private fun fetchBooks(searchTerm: String) {
-        val url = "https://kamorris.com/lab/cis3515/search.php?=term$searchTerm"
-        val bookList = BookList()
+        val url = "https://kamorris.com/lab/cis3515/search.php?term=$searchTerm"
 
         volleyQueue.add(
             JsonArrayRequest(
                 Request.Method.GET,
                 url,
                 null, { jsonArr ->
-                    Log.d("Response", jsonArr.toString())
+                    Log.d("FetchCall", "$url, ${jsonArr.length()}, $searchTerm, $jsonArr")
                     try {
+                        val bookList = BookList()
+
                         for (i in 0 until jsonArr.length()) {
                             val jsonObj = jsonArr.getJSONObject(i)
                             val book = Book(
@@ -78,7 +76,6 @@ class BookSearchActivity : AppCompatActivity() {
 
     private fun setIntentExtra(change: Boolean, retList: BookList) {
         // Update Intent
-        Log.d("TheTest", retList.size().toString())
         intent.apply {
             putExtra(CHANGE, change)
             putExtra(RET_LIST, retList)

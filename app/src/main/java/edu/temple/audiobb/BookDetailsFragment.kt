@@ -35,7 +35,7 @@ class BookDetailsFragment : Fragment() {
             .getBook().observe(viewLifecycleOwner, { book: Book ->
                 titleTextView.text = book.title
                 authorTextView.text = book.author
-                Picasso.get().load(book.coverURL).into(coverImageView)
+                // Picasso.get().load(book.coverURL).into(coverImageView)
             })
 
         return layout
