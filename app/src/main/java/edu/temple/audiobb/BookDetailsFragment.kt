@@ -29,13 +29,14 @@ class BookDetailsFragment : Fragment() {
         layout = inflater.inflate(R.layout.fragment_book_details, container, false)
         titleTextView = layout.findViewById(R.id.titleTextView)
         authorTextView = layout.findViewById(R.id.authorTextView)
+        coverImageView = layout.findViewById(R.id.coverImageView)
 
         ViewModelProvider(requireActivity())
             .get(BookViewModel::class.java)
             .getBook().observe(viewLifecycleOwner, { book: Book ->
                 titleTextView.text = book.title
                 authorTextView.text = book.author
-                // Picasso.get().load(book.coverURL).into(coverImageView)
+                Picasso.get().load(book.coverURL).into(coverImageView)
             })
 
         return layout
