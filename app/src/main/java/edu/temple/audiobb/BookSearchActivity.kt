@@ -56,7 +56,8 @@ class BookSearchActivity : Activity() {
                             val jsonObj = jsonArr.getJSONObject(i)
                             val book = Book(
                                 jsonObj.getInt("id"), jsonObj.getString("title"),
-                                jsonObj.getString("author"), jsonObj.getString("cover_url")
+                                jsonObj.getString("author"), jsonObj.getString("cover_url"),
+                                jsonObj.getInt("duration")
                             )
                             Log.d("Response", book.title)
                             bookList.add(book)
