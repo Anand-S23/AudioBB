@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
         if (it.obj != null) {
             val progress = it.obj as PlayerService.BookProgress
             progressViewModel.setBookProgress(progress)
-            Log.d("MainActivity", "Progress updated ${progress.progress}")
         }
         true
     }

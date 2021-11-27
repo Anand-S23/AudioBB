@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import edu.temple.audlibplayer.PlayerService
 import java.io.File
+import kotlin.properties.Delegates
 
 class ControlFragment : Fragment() {
 
@@ -24,6 +25,7 @@ class ControlFragment : Fragment() {
     private lateinit var mediaButton: Button
     private lateinit var stopButton: Button
 
+    private var beforePauseProgress: Int = 0
     private var isPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,19 +55,16 @@ class ControlFragment : Fragment() {
         ViewModelProvider(requireActivity())
             .get(BookProgressViewModel::class.java)
             .getBookProgress().observe(viewLifecycleOwner, { bookProgress: PlayerService.BookProgress ->
-                Log.d("ControlFragment", "Progress updated")
                 if (currentBook.id != -1) {
-                    if (bookProgress.progress == currentBook.duration) {
-                        bookSeekBar.progress = 0
-                        (requireActivity() as ControlInterface).stop()
-                        (requireActivity() as ControlInterface).play(currentBook.id)
-                        (requireActivity() as ControlInterface).pause()
+                    beforePauseProgress = bookProgress.progress
+                    val done: Boolean = (bookProgress.progress.toFloat() / currentBook.duration.toFloat()) >= .999
+                    if (done) {
                         mediaButton.text = getString(R.string.play)
                         isPlaying = false
+                    } else {
+                        bookSeekBar.progress =
+                            ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
                     }
-                } else {
-                    val progress: Int = ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
-                    bookSeekBar.progress = progress
                 }
             })
 
@@ -79,11 +78,12 @@ class ControlFragment : Fragment() {
                 if (isPlaying) {
                     isPlaying = false
                     mediaButton.text = getString(R.string.play)
-                    (requireActivity() as ControlFragment.ControlInterface).pause()
+                    (requireActivity() as ControlInterface).pause()
                 } else {
                     isPlaying = true
                     mediaButton.text = getString(R.string.pause)
-                    (requireActivity() as ControlFragment.ControlInterface).play(currentBook.id)
+                    (requireActivity() as ControlInterface).play(currentBook.id)
+                    (requireActivity() as ControlInterface).seekTo(beforePauseProgress)
                 }
             }
         }
@@ -93,7 +93,7 @@ class ControlFragment : Fragment() {
             nowPlaying.text = ""
             mediaButton.text = getString(R.string.play)
             isPlaying = false
-            (requireActivity() as ControlFragment.ControlInterface).stop()
+            (requireActivity() as ControlInterface).stop()
         }
 
         bookSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -104,8 +104,13 @@ class ControlFragment : Fragment() {
             }
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
-                val position: Int = ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
-                (requireActivity() as ControlFragment.ControlInterface).seekTo(position)
+                if (currentBook.id != -1) {
+                    val position: Int =
+                        ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
+                    (requireActivity() as ControlInterface).seekTo(position)
+                } else {
+                    bookSeekBar.progress = 0
+                }
             }
         })
 
