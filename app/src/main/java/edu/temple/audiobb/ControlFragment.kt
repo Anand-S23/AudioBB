@@ -12,7 +12,6 @@ import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
 import edu.temple.audlibplayer.PlayerService
 import java.io.File
-import kotlin.properties.Delegates
 
 class ControlFragment : Fragment() {
 
@@ -26,6 +25,8 @@ class ControlFragment : Fragment() {
     private lateinit var stopButton: Button
 
     private var beforePauseProgress: Int = 0
+    private var uriInitialized = false
+    private lateinit var file: File
     private var isPlaying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +46,7 @@ class ControlFragment : Fragment() {
                 currentBook = book
 
                 if (currentBook.id != -1) {
-                    nowPlaying.text = currentBook.title
+                    nowPlaying.text = "Now Playing: ${currentBook.title}"
                     mediaButton.text = getString(R.string.pause)
                     isPlaying = true
                     (requireActivity() as ControlInterface).play(currentBook.id)
@@ -56,7 +57,6 @@ class ControlFragment : Fragment() {
             .get(BookProgressViewModel::class.java)
             .getBookProgress().observe(viewLifecycleOwner, { bookProgress: PlayerService.BookProgress ->
                 if (currentBook.id != -1) {
-                    beforePauseProgress = bookProgress.progress
                     val done: Boolean = (bookProgress.progress.toFloat() / currentBook.duration.toFloat()) >= .999
                     if (done) {
                         mediaButton.text = getString(R.string.play)
@@ -76,14 +76,16 @@ class ControlFragment : Fragment() {
         mediaButton.setOnClickListener {
             if (currentBook.id != -1) {
                 if (isPlaying) {
+                    Log.d("ControlFragment", "is playing")
                     isPlaying = false
                     mediaButton.text = getString(R.string.play)
+                    beforePauseProgress = ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
                     (requireActivity() as ControlInterface).pause()
                 } else {
                     isPlaying = true
                     mediaButton.text = getString(R.string.pause)
-                    (requireActivity() as ControlInterface).play(currentBook.id)
-                    (requireActivity() as ControlInterface).seekTo(beforePauseProgress)
+                    Log.d("ControlFragment", "is not playing")
+                    (requireActivity() as ControlInterface).pause()
                 }
             }
         }
@@ -93,6 +95,7 @@ class ControlFragment : Fragment() {
             nowPlaying.text = ""
             mediaButton.text = getString(R.string.play)
             isPlaying = false
+            bookSeekBar.progress = 0
             (requireActivity() as ControlInterface).stop()
         }
 
