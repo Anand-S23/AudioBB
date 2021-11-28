@@ -25,9 +25,8 @@ class ControlFragment : Fragment() {
     private lateinit var stopButton: Button
 
     private var beforePauseProgress: Int = 0
-    private var uriInitialized = false
-    private lateinit var file: File
     private var isPlaying = false
+    private var zeroSet = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,14 +56,8 @@ class ControlFragment : Fragment() {
             .get(BookProgressViewModel::class.java)
             .getBookProgress().observe(viewLifecycleOwner, { bookProgress: PlayerService.BookProgress ->
                 if (currentBook.id != -1) {
-                    val done: Boolean = (bookProgress.progress.toFloat() / currentBook.duration.toFloat()) >= .999
-                    if (done) {
-                        mediaButton.text = getString(R.string.play)
-                        isPlaying = false
-                    } else {
-                        bookSeekBar.progress =
-                            ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
-                    }
+                    bookSeekBar.progress =
+                        ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
                 }
             })
 
@@ -76,20 +69,21 @@ class ControlFragment : Fragment() {
         mediaButton.setOnClickListener {
             if (currentBook.id != -1) {
                 if (isPlaying) {
-                    Log.d("ControlFragment", "is playing")
+                    // Pause the playing audio
                     isPlaying = false
                     mediaButton.text = getString(R.string.play)
                     beforePauseProgress = ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
                     (requireActivity() as ControlInterface).pause()
                 } else {
+                    // Resume the book from where it was left off
                     isPlaying = true
                     mediaButton.text = getString(R.string.pause)
-                    Log.d("ControlFragment", "is not playing")
                     (requireActivity() as ControlInterface).pause()
                 }
             }
         }
 
+        // Reset everything if stop was pressed
         stopButton.setOnClickListener {
             currentBook = blank
             nowPlaying.text = ""
@@ -107,10 +101,19 @@ class ControlFragment : Fragment() {
             }
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
+                // Update the position of audio book if seekbar was moved
                 if (currentBook.id != -1) {
-                    val position: Int =
-                        ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
-                    (requireActivity() as ControlInterface).seekTo(position)
+                    if (bookSeekBar.progress == 100) {
+                        bookSeekBar.progress = 0
+                        (requireActivity() as ControlInterface).seekTo(0)
+                        (requireActivity() as ControlInterface).pause()
+                        mediaButton.text = getString(R.string.play)
+                        isPlaying = false
+                    } else {
+                        val position: Int =
+                            ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
+                        (requireActivity() as ControlInterface).seekTo(position)
+                    }
                 } else {
                     bookSeekBar.progress = 0
                 }
