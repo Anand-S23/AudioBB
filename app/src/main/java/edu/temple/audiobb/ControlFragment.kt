@@ -13,6 +13,9 @@ import androidx.lifecycle.ViewModelProvider
 import edu.temple.audlibplayer.PlayerService
 import java.io.File
 
+private const val CURRENT_BOOK_ID = "currentBookID"
+private const val CURRENT_BOOK_PROGRESS = "currentBookProgress"
+
 class ControlFragment : Fragment() {
 
     private lateinit var layout: View
@@ -26,7 +29,6 @@ class ControlFragment : Fragment() {
 
     private var beforePauseProgress: Int = 0
     private var isPlaying = false
-    private var zeroSet = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,6 +50,7 @@ class ControlFragment : Fragment() {
                     nowPlaying.text = "Now Playing: ${currentBook.title}"
                     mediaButton.text = getString(R.string.pause)
                     isPlaying = true
+                    Log.d("Control", "book changed")
                     (requireActivity() as ControlInterface).play(currentBook.id)
                 }
             })
@@ -58,6 +61,7 @@ class ControlFragment : Fragment() {
                 if (currentBook.id != -1) {
                     bookSeekBar.progress =
                         ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
+                    beforePauseProgress = bookProgress.progress
                 }
             })
 
@@ -72,7 +76,6 @@ class ControlFragment : Fragment() {
                     // Pause the playing audio
                     isPlaying = false
                     mediaButton.text = getString(R.string.play)
-                    beforePauseProgress = ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
                     (requireActivity() as ControlInterface).pause()
                 } else {
                     // Resume the book from where it was left off

@@ -3,11 +3,8 @@ package edu.temple.audiobb
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -15,10 +12,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import edu.temple.audlibplayer.PlayerService
 import java.io.File
+import java.lang.Exception
 
 class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, ControlFragment.ControlInterface {
 
-    var twoPane = false
+    private var twoPane = false
     private lateinit var bookViewModel: BookViewModel
     private var bookList: BookList = BookList()
 
@@ -26,16 +24,15 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
     private lateinit var mediaControlBinder: PlayerService.MediaControlBinder
     private lateinit var progressViewModel: BookProgressViewModel
 
-    val mediaControlHandler = Handler(Looper.getMainLooper()) {
+    private val mediaControlHandler = Handler(Looper.getMainLooper()) {
         if (it.obj != null) {
             val progress = it.obj as PlayerService.BookProgress
             progressViewModel.setBookProgress(progress)
-            Log.d("MainActivity", "${progress.progress}")
         }
         true
     }
 
-    val serviceConnection = object: ServiceConnection {
+    private val serviceConnection = object: ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             isConnected = true
             mediaControlBinder = service as PlayerService.MediaControlBinder
@@ -46,6 +43,8 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
             isConnected = false
         }
     }
+
+    private var playing: Boolean = true
 
     private val searchActivityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val changed: Boolean? = it.data?.getBooleanExtra(CHANGE, false)
@@ -66,16 +65,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
+
         val searchActivityIntent = Intent(this, BookSearchActivity::class.java)
         findViewById<Button>(R.id.searchLaunchButton).setOnClickListener {
             searchActivityLauncher.launch(searchActivityIntent)
         }
-
-        bindService(
-            Intent(this, PlayerService::class.java),
-            serviceConnection,
-            BIND_AUTO_CREATE
-        )
 
         twoPane = findViewById<View>(R.id.container2) != null
         bookViewModel = ViewModelProvider(this).get(BookViewModel::class.java)
@@ -91,6 +86,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
         }
 
         if (savedInstanceState == null) {
+            bindService(
+                Intent(this, PlayerService::class.java),
+                serviceConnection,
+                BIND_AUTO_CREATE
+            )
+
             supportFragmentManager.beginTransaction()
                 .replace(R.id.container1, BookListFragment.newInstance(bookList))
                 .commit()
@@ -98,6 +99,8 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
             supportFragmentManager.beginTransaction()
                 .replace(R.id.container3, ControlFragment.newInstance())
                 .commit()
+        } else {
+            mediaControlBinder = savedInstanceState.getBinder("binder") as PlayerService.MediaControlBinder
         }
 
         if (twoPane) {
@@ -111,22 +114,25 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
                 .replace(R.id.container1, BookDetailsFragment.newInstance())
                 .addToBackStack(null)
                 .commit()
-
-            supportFragmentManager.beginTransaction()
-                .add(R.id.container3, ControlFragment.newInstance())
-                .commit()
         }
     }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBinder("binder", mediaControlBinder)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        unbindService(serviceConnection)
+    }
+
 
     override fun selectionMade() {
         if (!twoPane) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.container1, BookDetailsFragment.newInstance())
                 .addToBackStack(null)
-                .commit()
-
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.container3, ControlFragment.newInstance())
                 .commit()
         }
     }
@@ -138,6 +144,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
 
     override fun play(id: Int) {
         mediaControlBinder.play(id)
+        playing = true
     }
 
     override fun play(file: File, startPosition: Int) {
@@ -146,10 +153,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookListInterface, Co
 
     override fun pause() {
         mediaControlBinder.pause()
+        playing = !playing
     }
 
     override fun stop() {
         mediaControlBinder.stop()
+        playing = false
     }
 
     override fun seekTo(position: Int) {
