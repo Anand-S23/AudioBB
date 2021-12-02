@@ -41,89 +41,38 @@ class ControlFragment : Fragment() {
         // Inflate the layout for this fragment
         layout = inflater.inflate(R.layout.fragment_control, container, false)
 
-        ViewModelProvider(requireActivity())
-            .get(BookViewModel::class.java)
-            .getBook().observe(viewLifecycleOwner, { book: Book ->
-                currentBook = book
-
-                if (currentBook.id != -1) {
-                    nowPlaying.text = "Now Playing: ${currentBook.title}"
-                    mediaButton.text = getString(R.string.pause)
-                    isPlaying = true
-                    Log.d("Control", "book changed")
-                    (requireActivity() as ControlInterface).play(currentBook.id)
-                }
-            })
-
-        ViewModelProvider(requireActivity())
-            .get(BookProgressViewModel::class.java)
-            .getBookProgress().observe(viewLifecycleOwner, { bookProgress: PlayerService.BookProgress ->
-                if (currentBook.id != -1) {
-                    bookSeekBar.progress =
-                        ((bookProgress.progress.toFloat() / currentBook.duration.toFloat()) * 100).toInt()
-                    beforePauseProgress = bookProgress.progress
-                }
-            })
-
         bookSeekBar = layout.findViewById(R.id.bookSeekBar)
         nowPlaying = layout.findViewById(R.id.nowPlaying)
         mediaButton = layout.findViewById(R.id.mediaControl)
         stopButton = layout.findViewById(R.id.stop)
 
         mediaButton.setOnClickListener {
-            if (currentBook.id != -1) {
-                if (isPlaying) {
-                    // Pause the playing audio
-                    isPlaying = false
-                    mediaButton.text = getString(R.string.play)
-                    (requireActivity() as ControlInterface).pause()
-                } else {
-                    // Resume the book from where it was left off
-                    isPlaying = true
-                    mediaButton.text = getString(R.string.pause)
-                    (requireActivity() as ControlInterface).pause()
-                }
-            }
-        }
 
-        // Reset everything if stop was pressed
-        stopButton.setOnClickListener {
-            currentBook = blank
-            nowPlaying.text = ""
-            mediaButton.text = getString(R.string.play)
-            isPlaying = false
-            bookSeekBar.progress = 0
-            (requireActivity() as ControlInterface).stop()
         }
 
         bookSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seek: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    (activity as ControlInterface).seekTo(progress)
+                }
             }
 
             override fun onStartTrackingTouch(p0: SeekBar?) {
             }
 
             override fun onStopTrackingTouch(p0: SeekBar?) {
-                // Update the position of audio book if seekbar was moved
-                if (currentBook.id != -1) {
-                    if (bookSeekBar.progress == 100) {
-                        bookSeekBar.progress = 0
-                        (requireActivity() as ControlInterface).seekTo(0)
-                        (requireActivity() as ControlInterface).pause()
-                        mediaButton.text = getString(R.string.play)
-                        isPlaying = false
-                    } else {
-                        val position: Int =
-                            ((bookSeekBar.progress / 100.0f) * currentBook.duration).toInt()
-                        (requireActivity() as ControlInterface).seekTo(position)
-                    }
-                } else {
-                    bookSeekBar.progress = 0
-                }
             }
         })
 
         return layout
+    }
+
+    fun setNowPlaying(title: String) {
+        nowPlaying?.text = title
+    }
+
+    fun setPlayProgress(progress: Int) {
+        bookSeekBar?.setProgress(progress, true)
     }
 
     companion object {
@@ -134,8 +83,7 @@ class ControlFragment : Fragment() {
     }
 
     interface ControlInterface {
-        fun play(id: Int)
-        fun play(file: File, startPosition: Int)
+        fun play()
         fun pause()
         fun stop()
         fun seekTo(position: Int)
