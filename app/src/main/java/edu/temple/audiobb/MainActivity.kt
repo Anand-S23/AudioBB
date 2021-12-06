@@ -183,7 +183,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
             .setOnProgressListener {}
             .start(object : OnDownloadListener {
                 override fun onDownloadComplete() {
-                    Toast.makeText(this@MainActivity, "Book Finished Downloading", Toast.LENGTH_LONG)
+                    Toast.makeText(this@MainActivity, "Book Finished Downloading", Toast.LENGTH_SHORT)
                         .show()
                 }
                 override fun onError(error: com.downloader.Error?) {
@@ -195,7 +195,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
 
 
     override fun onBackPressed() {
-        // Backpress clears the selected book
+        // BackPress clears the selected book
         selectedBookViewModel.setSelectedBook(null)
         super.onBackPressed()
     }
@@ -216,7 +216,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     override fun play() {
         // Save previous book if any
         val prevBook = playingBookViewModel.getPlayingBook().value
-        if (prevBook != null) {
+        if (prevBook != null && prevBook.id != -1) {
             downloadedBooks.put(prevBook.id, bookProgress.progress)
         }
 
@@ -252,6 +252,10 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     }
 
     override fun stop() {
+        val book = playingBookViewModel.getPlayingBook().value!!
+        playingBookViewModel.setPlayingBook(Book(-1, "", "", 0, ""))
+        downloadedBooks.put(book.id, 0)
+
         if (connected) {
             mediaControlBinder.stop()
             stopService(serviceIntent)

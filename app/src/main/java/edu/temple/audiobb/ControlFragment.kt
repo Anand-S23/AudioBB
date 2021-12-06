@@ -74,10 +74,6 @@ class ControlFragment : Fragment() {
         seekBar?.setProgress(progress, true)
     }
 
-    fun getPlayProgress() : Int {
-        return seekBar?.progress!!
-    }
-
     interface MediaControlInterface {
         fun play()
         fun pause()
