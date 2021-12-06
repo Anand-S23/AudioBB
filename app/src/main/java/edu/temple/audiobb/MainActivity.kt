@@ -23,7 +23,10 @@ import com.downloader.OnDownloadListener
 import com.downloader.PRDownloader
 import com.downloader.PRDownloaderConfig
 import edu.temple.audlibplayer.PlayerService
+import org.json.JSONArray
 import java.io.File
+
+const val JSON_ARR: String = "jsonArr"
 
 class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface , ControlFragment.MediaControlInterface{
 
@@ -41,6 +44,8 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     private var sbAuthor = ""
     private var sbDuration = 0
     private var sbCoverUrl = ""
+
+    private var savedJson = "-1"
 
     private val downloadedBooks : SparseArray<Int> = SparseArray()
 
@@ -90,8 +95,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
         it.data?.run {
             bookListViewModel.copyBooks(getSerializableExtra(BookList.BOOKLIST_KEY) as BookList)
             bookListFragment.bookListUpdated()
-        }
 
+            sharedPreferences.edit().apply {
+                putString("savedJson", getStringExtra(JSON_ARR).toString())
+                apply()
+            }
+        }
     }
 
     private val serviceConnection = object: ServiceConnection {
@@ -158,18 +167,20 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
 
         spFile = File(filesDir, "spFile.txt")
 
-        var lastBook = Book(sbId, sbTitle, sbAuthor, sbDuration, sbCoverUrl)
+        val lastBook = Book(sbId, sbTitle, sbAuthor, sbDuration, sbCoverUrl)
         playingBookViewModel.setPlayingBook(lastBook)
         selectedBookViewModel.setSelectedBook(lastBook)
 
         if (spFile.exists()) {
             spFile.inputStream().bufferedReader().forEachLine {
-                var line = it.split(" ")
-                var key = line[0].toInt()
-                var value = line[1].toInt()
+                val line = it.split(" ")
+                val key = line[0].toInt()
+                val value = line[1].toInt()
                 downloadedBooks.put(key, value)
             }
         }
+
+        savedJson = sharedPreferences.getString("savedJson", "-1").toString()
 
         // If we're switching from one container to two containers
         // clear BookDetailsFragment from container1
@@ -207,6 +218,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
             searchRequest.launch(Intent(this, BookSearchActivity::class.java))
         }
 
+        if (savedJson != "-1") {
+            val bl = BookList()
+            bl.populateBooks(JSONArray(savedJson))
+            bookListViewModel.copyBooks(bl)
+            bookListFragment.bookListUpdated()
+        }
     }
 
     private fun downloadBook(url: String, fileName: String) {

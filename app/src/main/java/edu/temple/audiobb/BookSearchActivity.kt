@@ -10,6 +10,7 @@ import android.widget.ImageButton
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.Volley
+import org.json.JSONArray
 
 class BookSearchActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +25,10 @@ class BookSearchActivity : Activity() {
             Volley.newRequestQueue(this).add(
                 JsonArrayRequest(Request.Method.GET, url, null, {
                     setResult(RESULT_OK,
-                        Intent().putExtra(BookList.BOOKLIST_KEY, BookList().apply{populateBooks(it)})
+                        Intent().apply {
+                            putExtra(BookList.BOOKLIST_KEY, BookList().apply{populateBooks(it)})
+                            putExtra(JSON_ARR, it.toString())
+                        }
                     )
                     finish()
                 }, {})
