@@ -3,6 +3,7 @@ package edu.temple.audiobb
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -30,11 +31,18 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     private lateinit var serviceIntent : Intent
     private lateinit var mediaControlBinder : PlayerService.MediaControlBinder
     private lateinit var bookProgress: PlayerService.BookProgress
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var spFile: File
     private var connected = false
+    private var playing = false
 
-    private val downloadedBooks : SparseArray<Int> by lazy {
-        SparseArray()
-    }
+    private var sbId = -1
+    private var sbTitle = ""
+    private var sbAuthor = ""
+    private var sbDuration = 0
+    private var sbCoverUrl = ""
+
+    private val downloadedBooks : SparseArray<Int> = SparseArray()
 
     val audiobookHandler = Handler(Looper.getMainLooper()) { msg ->
 
@@ -133,18 +141,42 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
         // bind to service
         bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE)
 
+        val config = PRDownloaderConfig.newBuilder()
+            .setReadTimeout(30000)
+            .setConnectTimeout(30000)
+            .build()
+        PRDownloader.initialize(applicationContext, config)
+
+        sharedPreferences = getPreferences(MODE_PRIVATE)
+        sbId = sharedPreferences.getInt("sbId", -1)
+        sbTitle = sharedPreferences.getString("sbTitle", "").toString()
+        sbAuthor = sharedPreferences.getString("sbAuthor", "").toString()
+        sbDuration = sharedPreferences.getInt("sbDuration", 0)
+        sbCoverUrl = sharedPreferences.getString("sbCoverUrl", "").toString()
+
+        Log.d("main", sbTitle)
+
+        spFile = File(filesDir, "spFile.txt")
+
+        var lastBook = Book(sbId, sbTitle, sbAuthor, sbDuration, sbCoverUrl)
+        playingBookViewModel.setPlayingBook(lastBook)
+        selectedBookViewModel.setSelectedBook(lastBook)
+
+        if (spFile.exists()) {
+            spFile.inputStream().bufferedReader().forEachLine {
+                var line = it.split(" ")
+                var key = line[0].toInt()
+                var value = line[1].toInt()
+                downloadedBooks.put(key, value)
+            }
+        }
+
         // If we're switching from one container to two containers
         // clear BookDetailsFragment from container1
         if (supportFragmentManager.findFragmentById(R.id.container1) is BookDetailsFragment
             && selectedBookViewModel.getSelectedBook().value != null) {
             supportFragmentManager.popBackStack()
         }
-
-        val config = PRDownloaderConfig.newBuilder()
-            .setReadTimeout(30000)
-            .setConnectTimeout(30000)
-            .build()
-        PRDownloader.initialize(applicationContext, config)
 
         // If this is the first time the activity is loading, go ahead and add a BookListFragment
         if (savedInstanceState == null) {
@@ -193,6 +225,28 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
             })
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        var currentPlaying = playingBookViewModel.getPlayingBook().value!!
+
+        sharedPreferences.edit().apply {
+            putInt("sbId", currentPlaying.id)
+            putString("sbTitle", currentPlaying.title)
+            putString("sbAuthor", currentPlaying.author)
+            putInt("sbDuration", currentPlaying.duration)
+            putString("sbCoverUrl", currentPlaying.coverURL)
+            apply()
+        }
+
+        spFile.printWriter().use {
+            for (i in 0 until downloadedBooks.size()) {
+                val key = downloadedBooks.keyAt(i)
+                val value = downloadedBooks.get(key)
+                it.println("$key $value")
+            }
+        }
+    }
 
     override fun onBackPressed() {
         // BackPress clears the selected book
@@ -216,9 +270,13 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     override fun play() {
         // Save previous book if any
         val prevBook = playingBookViewModel.getPlayingBook().value
-        if (prevBook != null && prevBook.id != -1) {
-            downloadedBooks.put(prevBook.id, bookProgress.progress)
+        if (playing) {
+            if (prevBook != null && prevBook.id != -1) {
+                downloadedBooks.put(prevBook.id, bookProgress.progress)
+            }
         }
+
+        playing = true
 
         val book = selectedBookViewModel.getSelectedBook().value
         if (connected && book != null) {
@@ -247,6 +305,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
 
         val book = selectedBookViewModel.getSelectedBook().value
         if (connected && book != null) {
+            Log.d("Main", "Paused")
             mediaControlBinder.pause()
         }
     }
