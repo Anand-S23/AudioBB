@@ -51,7 +51,11 @@ class ControlFragment : Fragment() {
             when (it.id) {
                 R.id.playButton -> parent.play()
                 R.id.pauseButton -> parent.pause()
-                R.id.stopButton -> parent.stop()
+                R.id.stopButton -> {
+                    parent.stop()
+                    setNowPlaying("")
+                    setPlayProgress(0)
+                }
             }
         }
 

@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
                 .commit()
 
         findViewById<ImageButton>(R.id.searchButton).setOnClickListener {
-            searchRequest.launch(Intent(this, SearchActivity::class.java))
+            searchRequest.launch(Intent(this, BookSearchActivity::class.java))
         }
 
     }
