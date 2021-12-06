@@ -9,27 +9,38 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
+import android.util.SparseArray
 import android.view.View
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.downloader.OnDownloadListener
+import com.downloader.PRDownloader
+import com.downloader.PRDownloaderConfig
 import edu.temple.audlibplayer.PlayerService
+import java.io.File
 
 class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface , ControlFragment.MediaControlInterface{
 
     private lateinit var bookListFragment : BookListFragment
     private lateinit var serviceIntent : Intent
     private lateinit var mediaControlBinder : PlayerService.MediaControlBinder
+    private lateinit var bookProgress: PlayerService.BookProgress
     private var connected = false
+
+    private val downloadedBooks : SparseArray<Int> by lazy {
+        SparseArray()
+    }
 
     val audiobookHandler = Handler(Looper.getMainLooper()) { msg ->
 
         // obj (BookProgress object) may be null if playback is paused
         msg.obj?.let { msgObj ->
-            val bookProgress = msgObj as PlayerService.BookProgress
+            bookProgress = msgObj as PlayerService.BookProgress
             // If the service is playing a book but the activity doesn't know about it
             // (this would happen if the activity was closed and then reopened) then
             // fetch the book details so the activity can be properly updated
@@ -129,6 +140,12 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
             supportFragmentManager.popBackStack()
         }
 
+        val config = PRDownloaderConfig.newBuilder()
+            .setReadTimeout(30000)
+            .setConnectTimeout(30000)
+            .build()
+        PRDownloader.initialize(applicationContext, config)
+
         // If this is the first time the activity is loading, go ahead and add a BookListFragment
         if (savedInstanceState == null) {
             bookListFragment = BookListFragment()
@@ -160,6 +177,23 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
 
     }
 
+    private fun downloadBook(url: String, fileName: String) {
+        PRDownloader.download(url, filesDir.absolutePath, fileName)
+            .build()
+            .setOnProgressListener {}
+            .start(object : OnDownloadListener {
+                override fun onDownloadComplete() {
+                    Toast.makeText(this@MainActivity, "Book Finished Downloading", Toast.LENGTH_LONG)
+                        .show()
+                }
+                override fun onError(error: com.downloader.Error?) {
+                    Toast.makeText(this@MainActivity, "Error occurred while downloading file", Toast.LENGTH_LONG)
+                        .show()
+                }
+            })
+    }
+
+
     override fun onBackPressed() {
         // Backpress clears the selected book
         selectedBookViewModel.setSelectedBook(null)
@@ -180,16 +214,41 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
     }
 
     override fun play() {
-        if (connected && selectedBookViewModel.getSelectedBook().value != null) {
+        // Save previous book if any
+        val prevBook = playingBookViewModel.getPlayingBook().value
+        if (prevBook != null) {
+            downloadedBooks.put(prevBook.id, bookProgress.progress)
+        }
+
+        val book = selectedBookViewModel.getSelectedBook().value
+        if (connected && book != null) {
             Log.d("Button pressed", "Play button")
-            mediaControlBinder.play(selectedBookViewModel.getSelectedBook().value!!.id)
-            playingBookViewModel.setPlayingBook(selectedBookViewModel.getSelectedBook().value)
+            if (downloadedBooks.contains(book.id)) {
+                val audioFile = File(filesDir, "${book.id}.mp3")
+                mediaControlBinder.play(audioFile, downloadedBooks.get(book.id))
+            } else {
+                mediaControlBinder.play(book.id)
+                val url = "https://kamorris.com/lab/audlib/download.php?id=${book.id}"
+                downloadBook(url, "${book.id}.mp3")
+                downloadedBooks.put(book.id, 0)
+            }
+
+            playingBookViewModel.setPlayingBook(book)
             startService(serviceIntent)
         }
     }
 
     override fun pause() {
-        if (connected) mediaControlBinder.pause()
+        // Save previous book if any
+        val prevBook = playingBookViewModel.getPlayingBook().value
+        if (prevBook != null) {
+            downloadedBooks.put(prevBook.id, bookProgress.progress)
+        }
+
+        val book = selectedBookViewModel.getSelectedBook().value
+        if (connected && book != null) {
+            mediaControlBinder.pause()
+        }
     }
 
     override fun stop() {
@@ -201,7 +260,15 @@ class MainActivity : AppCompatActivity(), BookListFragment.BookSelectedInterface
 
     override fun seek(position: Int) {
         // Converting percentage to proper book progress
-        if (connected && mediaControlBinder.isPlaying) mediaControlBinder.seekTo((playingBookViewModel.getPlayingBook().value!!.duration * (position.toFloat() / 100)).toInt())
+        if (connected && mediaControlBinder.isPlaying) {
+            val book = playingBookViewModel.getPlayingBook().value!!
+            val progress = (book.duration * (position.toFloat() / 100)).toInt()
+            if (downloadedBooks.contains(book.id)) {
+                mediaControlBinder.play(File(filesDir, "${book.id}.mp3"), progress)
+            } else {
+                mediaControlBinder.seekTo(progress)
+            }
+        }
     }
 
     override fun onDestroy() {
